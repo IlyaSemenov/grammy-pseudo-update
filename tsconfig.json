@@ -1,0 +1,9 @@
+{
+	"extends": "@tsconfig/node14",
+	"include": ["src", "tests"],
+	"compilerOptions": {
+		"paths": {
+			"grammy-pseudo-update": ["./src"]
+		}
+	}
+}

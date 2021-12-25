@@ -1,0 +1,51 @@
+{
+  "name": "grammy-pseudo-update",
+  "description": "grammY plugin: pseudo (manually generated) updates",
+  "version": "0.0.0-development",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/IlyaSemenov/grammy-pseudo-update"
+  },
+  "author": "Ilya Semenov",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "source": "src/index.ts",
+  "files": [
+    "dist",
+    "src",
+    "!**/*.test.*"
+  ],
+  "scripts": {
+    "test": "tap 'tests/**/*.test.ts'",
+    "build": "tsup",
+    "prepack": "npm run build",
+    "lint": "eslint --fix '**/*.{js,ts}'",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^15.0.0",
+    "@commitlint/config-conventional": "^15.0.0",
+    "@tsconfig/node14": "^1.0.1",
+    "@types/tap": "^15.0.5",
+    "@typescript-eslint/eslint-plugin": "^5.8.0",
+    "@typescript-eslint/parser": "^5.8.0",
+    "esbuild": "^0.14.8",
+    "esbuild-runner": "^2.2.1",
+    "eslint": "^8.5.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "eslint-plugin-simple-import-sort": "^7.0.0",
+    "grammy": "^1.5.4",
+    "husky": ">=6",
+    "lint-staged": ">=10",
+    "prettier": "^2.1.2",
+    "tap": "^15.1.5",
+    "tsup": "^5.11.9",
+    "typescript": "^4.0.5"
+  },
+  "peerDependencies": {
+    "grammy": "^1.5.4"
+  }
+}
