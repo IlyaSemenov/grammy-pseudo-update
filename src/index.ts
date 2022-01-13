@@ -78,14 +78,14 @@ Composer.prototype.pseudo = function <C extends PseudoUpdateFlavoredContext>(
 const Context_chat_prop = Object.getOwnPropertyDescriptor(
 	Context.prototype,
 	"chat"
-)!
+)
 
 Object.defineProperty(Context.prototype, "chat", {
 	...Context_chat_prop,
 	get(this: Context) {
 		return this.update.pseudo
 			? this.update.pseudo.chat
-			: Context_chat_prop.get!.call(this)
+			: Context_chat_prop?.get?.call(this)
 	},
 })
 
