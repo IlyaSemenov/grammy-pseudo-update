@@ -6,9 +6,9 @@ declare module "grammy" {
 		handlePseudoUpdate(args: PseudoUpdateArg): Promise<void>
 	}
 	interface Composer<C extends Context> {
-		pseudo<C extends PseudoUpdateFlavoredContext>(
-			handler: MiddlewareFn<C>
-		): Composer<C>
+		pseudo<C2 extends PseudoUpdateFlavoredContext<C>>(
+			handler: MiddlewareFn<C2>
+		): Composer<C2>
 	}
 	interface Context extends PseudoUpdateFlavor {}
 }
@@ -66,9 +66,10 @@ Bot.prototype.handlePseudoUpdate = async function (
 	})
 }
 
-Composer.prototype.pseudo = function <C extends PseudoUpdateFlavoredContext>(
-	this: Composer<C>,
-	handler: MiddlewareFn<C>
+// FIXME: replace `any` with C/C2 from the interface declaration
+Composer.prototype.pseudo = function (
+	this: Composer<any>,
+	handler: MiddlewareFn<any>
 ) {
 	return this.use((ctx, next) =>
 		ctx.update.pseudo ? handler(ctx, next) : next()
