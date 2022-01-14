@@ -1,31 +1,8 @@
 import { Chat } from "@grammyjs/types"
 import { Bot, Composer, Context, MiddlewareFn } from "grammy"
 
-declare module "grammy" {
-	interface Bot {
-		handlePseudoUpdate(args: PseudoUpdateArg): Promise<void>
-	}
-	interface Composer<C extends Context> {
-		pseudo<C2 extends PseudoUpdateFlavoredContext<C>>(
-			handler: MiddlewareFn<C2>
-		): Composer<C2>
-	}
-	interface Context extends PseudoUpdateFlavor {}
-}
-
-declare module "@grammyjs/types" {
-	interface Update {
-		pseudo?: PseudoUpdate
-	}
-}
-
-export interface PseudoUpdate {
-	chat: Chat
-	payload: PseudoUpdatePayload
-}
-
 /**
-Pseudo update payload
+Pseudo update payload (ctx.pseudo, ctx.update.pseudo.payload)
 
 Extend with:
 
@@ -43,6 +20,13 @@ export interface PseudoUpdatePayload {
 	// Empty - for external augmentation
 }
 
+/** ctx.update.pseudo */
+export interface PseudoUpdate {
+	chat: Chat
+	payload?: PseudoUpdatePayload
+}
+
+/** To be merged with Context */
 export interface PseudoUpdateFlavor {
 	readonly pseudo?: PseudoUpdatePayload
 }
@@ -51,18 +35,52 @@ export type PseudoUpdateFlavoredContext<C extends Context = Context> = C &
 	PseudoUpdateFlavor
 
 type PseudoUpdateArg = ({ chat_id: number } | { chat: Chat }) & {
-	payload: PseudoUpdatePayload
+	payload?: PseudoUpdatePayload
 }
 
-Bot.prototype.handlePseudoUpdate = async function (
-	this: Bot,
-	update: PseudoUpdateArg
+declare module "grammy" {
+	interface Bot<C extends Context = Context> {
+		handlePseudoUpdate(
+			arg: PseudoUpdateArg,
+			middleware?: MiddlewareFn<C>
+		): Promise<void>
+	}
+	interface Composer<C extends Context> {
+		pseudo<C2 extends PseudoUpdateFlavoredContext<C>>(
+			handler: MiddlewareFn<C2>
+		): Composer<C2>
+	}
+	interface Context extends PseudoUpdateFlavor {}
+}
+
+declare module "@grammyjs/types" {
+	interface Update {
+		pseudo?: PseudoUpdate
+	}
+}
+
+Bot.prototype.handlePseudoUpdate = async function <C extends Context>(
+	this: Bot<C>,
+	update: PseudoUpdateArg,
+	middleware?: MiddlewareFn<C>
 ): Promise<void> {
 	const chat =
 		"chat" in update ? update.chat : await this.api.getChat(update.chat_id)
+	const thisAsAny = this as any
+	const thisHandler = thisAsAny.handler
+	if (middleware) {
+		// Oy vey!
+		// Patch this.handler so that this.middleware() inside handleUpdate calls us
+		thisAsAny.handler = new Composer(thisHandler, middleware).middleware()
+	}
 	return this.handleUpdate({
 		update_id: 0,
 		pseudo: { chat, payload: update.payload },
+	}).finally(() => {
+		if (middleware) {
+			// Restore this.handler
+			thisAsAny.handler = thisHandler
+		}
 	})
 }
 
