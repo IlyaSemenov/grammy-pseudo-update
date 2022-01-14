@@ -23,12 +23,12 @@ import { Bot } from "grammy"
 const bot = new Bot(process.env.BOT_TOKEN)
 
 bot.pseudo(async (ctx, next) => {
-	// Access payload with ctx.pseudo or ctx.update.pseudo.payload
-	await ctx.reply(`External event occured: ${ctx.pseudo}`)
+  // Access payload with ctx.pseudo or ctx.update.pseudo.payload
+  await ctx.reply(`External event occured: ${ctx.pseudo}`)
 })
 
 some_external_event_listener((chat_id, payload) => {
-	bot.handlePseudoUpdate({ chat_id, payload })
+  bot.handlePseudoUpdate({ chat_id, payload })
 })
 
 bot.start()
@@ -45,10 +45,10 @@ import { Bot } from "grammy"
 const bot = new Bot(process.env.BOT_TOKEN)
 
 some_external_event_listener((chat_id, payload) => {
-	bot.handlePseudoUpdate({ chat_id }, (ctx) => {
-		// Note: this will only be called if no other middleware handles the update
-		await ctx.reply(`External event occured: ${payload}`)
-	})
+  bot.handlePseudoUpdate({ chat_id }, (ctx) => {
+    // Note: this will only be called if no other middleware handles the update
+    await ctx.reply(`External event occured: ${payload}`)
+  })
 })
 
 bot.start()
@@ -60,9 +60,9 @@ Augment the payload interface:
 
 ```ts
 declare module "grammy-pseudo-update" {
-	interface PseudoUpdatePayload {
-		foo?: FooData
-	}
+  interface PseudoUpdatePayload {
+    foo?: FooData
+  }
 }
 ```
 
