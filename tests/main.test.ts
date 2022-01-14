@@ -63,3 +63,11 @@ tap.test("final handler ignored when payload provided", async (tap) => {
 	await bot.handlePseudoUpdate({ chat })
 	tap.same(log, ["mw", "final", "mw"])
 })
+
+tap.test("custom update_id", async (tap) => {
+	const { bot } = init()
+	const update_id = 4 // https://xkcd.com/221/
+	await bot.handlePseudoUpdate({ chat, update_id }, (ctx) => {
+		tap.same(ctx.update.update_id, update_id)
+	})
+})

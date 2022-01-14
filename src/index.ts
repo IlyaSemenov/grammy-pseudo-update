@@ -35,6 +35,7 @@ export type PseudoUpdateFlavoredContext<C extends Context = Context> = C &
 	PseudoUpdateFlavor
 
 type PseudoUpdateArg = ({ chat_id: number } | { chat: Chat }) & {
+	update_id?: number
 	payload?: PseudoUpdatePayload
 }
 
@@ -74,7 +75,7 @@ Bot.prototype.handlePseudoUpdate = async function <C extends Context>(
 		thisAsAny.handler = new Composer(thisHandler, middleware).middleware()
 	}
 	return this.handleUpdate({
-		update_id: 0,
+		update_id: update.update_id || 0,
 		pseudo: { chat, payload: update.payload },
 	}).finally(() => {
 		if (middleware) {
