@@ -37,16 +37,20 @@ bot.start()
 ### With ad-hoc middleware
 
 ```ts
-// Monkey patch grammy.
-import "grammy-pseudo-update"
+// This will monkey-patch grammy.
+import { pseudoUpdate } from "grammy-pseudo-update"
 
 import { Bot } from "grammy"
 
 const bot = new Bot(process.env.BOT_TOKEN)
+bot.use(session(...))
+// Add ad-hoc middleware executor after you've prepared the context.
+bot.use(pseudoUpdate)
+bot.command("start", ...)
 
 some_external_event_listener((chat_id, payload) => {
   bot.handlePseudoUpdate({ chat_id }, (ctx) => {
-    // Note: this will only be called if no other middleware handles the update
+    // This will be executed by `pseudoUpdate` executor above.
     await ctx.reply(`External event occured: ${payload}`)
   })
 })

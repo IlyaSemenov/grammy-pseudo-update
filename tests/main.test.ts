@@ -1,73 +1,94 @@
 import "grammy-pseudo-update"
 
 import { Chat } from "@grammyjs/types"
-import { Bot } from "grammy"
-import { PseudoUpdatePayload } from "grammy-pseudo-update"
+import { Bot, Context } from "grammy"
+import { pseudoUpdate, PseudoUpdatePayload } from "grammy-pseudo-update"
 import tap from "tap"
 
 declare module "grammy-pseudo-update" {
 	interface PseudoUpdatePayload {
-		test?: true
+		test?: string
 	}
 }
 
-function init() {
-	const bot = new Bot("invalid_token")
-	bot.botInfo = {} as any
-	const log: string[] = []
-	bot.pseudo((ctx, next) => {
-		log.push("mw")
-		if (!ctx.pseudo?.test) {
-			return next()
-		}
-	})
-	return { bot, log }
+class TestBot<C extends Context = Context> extends Bot<C> {
+	constructor() {
+		super("invalid_token")
+		this.botInfo = {} as any
+	}
 }
 
 const chat: Chat = { type: "private", id: 12345, first_name: "John" }
-const payload: PseudoUpdatePayload = { test: true }
+const payload: PseudoUpdatePayload = { test: "hello" }
 
 tap.test("simple", async (tap) => {
-	const { bot, log } = init()
-	await bot.handlePseudoUpdate({ chat })
-	tap.same(log, ["mw"])
-})
-
-tap.test("simple with payload", async (tap) => {
-	const { bot, log } = init()
+	const bot = new TestBot()
+	const log: string[] = []
+	bot.pseudo((ctx) => {
+		log.push(`mw: ${ctx.pseudo?.test}`)
+	})
 	await bot.handlePseudoUpdate({ chat, payload })
-	tap.same(log, ["mw"])
+	tap.same(log, ["mw: hello"])
 })
 
-tap.test("final handler called when no payload", async (tap) => {
-	const { bot, log } = init()
-	await bot.handlePseudoUpdate({ chat }, () => {
-		log.push("final")
+tap.test("middleware flow", async (tap) => {
+	const bot = new TestBot()
+	const log: string[] = []
+	bot.pseudo((ctx, next) => {
+		log.push(`mw1: ${ctx.pseudo?.test}`)
+		return next()
 	})
-	tap.same(log, ["mw", "final"])
-})
-
-tap.test("final handler ignored when payload provided", async (tap) => {
-	const { bot, log } = init()
-	await bot.handlePseudoUpdate({ chat, payload }, () => {
-		log.push("final")
+	bot.pseudo((ctx) => {
+		log.push(`mw2: ${ctx.pseudo?.test}`)
 	})
-	tap.same(log, ["mw"])
-})
-
-tap.test("final handler ignored when payload provided", async (tap) => {
-	const { bot, log } = init()
-	await bot.handlePseudoUpdate({ chat }, () => {
-		log.push("final")
+	bot.pseudo((ctx) => {
+		log.push(`mw3: ${ctx.pseudo?.test}`)
 	})
-	await bot.handlePseudoUpdate({ chat })
-	tap.same(log, ["mw", "final", "mw"])
+	await bot.handlePseudoUpdate({ chat, payload })
+	tap.same(log, ["mw1: hello", "mw2: hello"])
 })
 
 tap.test("custom update_id", async (tap) => {
-	const { bot } = init()
+	const bot = new TestBot()
 	const update_id = 4 // https://xkcd.com/221/
 	await bot.handlePseudoUpdate({ chat, update_id }, (ctx) => {
 		tap.same(ctx.update.update_id, update_id)
+	})
+})
+
+tap.test("ad-hoc handler", async (tap) => {
+	function init() {
+		const bot = new TestBot<Context & { foo: string }>()
+		const log: string[] = []
+		bot.use((ctx, next) => {
+			ctx.foo = "a"
+			return next()
+		})
+		bot.pseudo((ctx, next) => {
+			log.push(`mw1: ${ctx.foo} ${ctx.pseudo?.test}`)
+			return next()
+		})
+		bot.use(pseudoUpdate)
+		bot.use((ctx, next) => {
+			ctx.foo = "b"
+			return next()
+		})
+		bot.pseudo((ctx, next) => {
+			log.push(`mw2: ${ctx.foo} ${ctx.pseudo?.test}`)
+			return next()
+		})
+		return { bot, log }
+	}
+	tap.test("with ad-hoc middleware", async (tap) => {
+		const { bot, log } = init()
+		await bot.handlePseudoUpdate({ chat, payload }, (ctx) => {
+			log.push(`ad-hoc: ${ctx.foo}`)
+		})
+		tap.same(log, ["mw1: a hello", "ad-hoc: a"])
+	})
+	tap.test("without ad-hoc middleware", async (tap) => {
+		const { bot, log } = init()
+		await bot.handlePseudoUpdate({ chat, payload })
+		tap.same(log, ["mw1: a hello", "mw2: b hello"])
 	})
 })

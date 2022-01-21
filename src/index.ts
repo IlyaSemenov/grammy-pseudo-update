@@ -24,6 +24,7 @@ export interface PseudoUpdatePayload {
 export interface PseudoUpdate {
 	chat: Chat
 	payload?: PseudoUpdatePayload
+	middleware?: MiddlewareFn<any>
 }
 
 /** To be merged with Context */
@@ -67,22 +68,30 @@ Bot.prototype.handlePseudoUpdate = async function <C extends Context>(
 ): Promise<void> {
 	const chat =
 		"chat" in update ? update.chat : await this.api.getChat(update.chat_id)
-	const thisAsAny = this as any
-	const thisHandler = thisAsAny.handler
-	if (middleware) {
-		// Oy vey!
-		// Patch this.handler so that this.middleware() inside handleUpdate calls us
-		thisAsAny.handler = new Composer(thisHandler, middleware).middleware()
-	}
 	return this.handleUpdate({
 		update_id: update.update_id || 0,
-		pseudo: { chat, payload: update.payload },
-	}).finally(() => {
-		if (middleware) {
-			// Restore this.handler
-			thisAsAny.handler = thisHandler
-		}
+		pseudo: { chat, payload: update.payload, middleware },
 	})
+}
+
+/**
+ *
+ * Middleware to process ad-hoc pseudo updates.
+ *
+ * Usage:
+ *
+ * bot.use(pseudoUpdate)
+ * ...
+ * bot.handlePseudoUpdate({ chat_id }, ctx => ctx.reply("Update."))
+ *
+ * */
+export const pseudoUpdate: MiddlewareFn = (ctx, next) => {
+	const mw = ctx.update.pseudo?.middleware
+	if (mw) {
+		return mw(ctx, next)
+	} else {
+		return next()
+	}
 }
 
 // FIXME: replace `any` with C/C2 from the interface declaration
