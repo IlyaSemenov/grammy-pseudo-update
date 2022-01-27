@@ -32,9 +32,6 @@ export interface PseudoUpdateFlavor {
 	readonly pseudo?: PseudoUpdatePayload
 }
 
-export type PseudoUpdateFlavoredContext<C extends Context = Context> = C &
-	PseudoUpdateFlavor
-
 type PseudoUpdateArg = ({ chat_id: number } | { chat: Chat }) & {
 	update_id?: number
 	payload?: PseudoUpdatePayload
@@ -48,9 +45,7 @@ declare module "grammy" {
 		): Promise<void>
 	}
 	interface Composer<C extends Context> {
-		pseudo<C2 extends PseudoUpdateFlavoredContext<C>>(
-			handler: MiddlewareFn<C2>
-		): Composer<C2>
+		pseudo(...middleware: MiddlewareFn<C>[]): Composer<C>
 	}
 	interface Context extends PseudoUpdateFlavor {}
 }
@@ -94,14 +89,11 @@ export const pseudoUpdate: MiddlewareFn = (ctx, next) => {
 	}
 }
 
-// FIXME: replace `any` with C/C2 from the interface declaration
-Composer.prototype.pseudo = function (
-	this: Composer<any>,
-	handler: MiddlewareFn<any>
+Composer.prototype.pseudo = function <C extends Context>(
+	this: Composer<C>,
+	...middleware: MiddlewareFn<C>[]
 ) {
-	return this.use((ctx, next) =>
-		ctx.update.pseudo ? handler(ctx, next) : next()
-	)
+	return this.filter((ctx) => !!ctx.update.pseudo, ...middleware)
 }
 
 const Context_chat_prop = Object.getOwnPropertyDescriptor(

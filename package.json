@@ -18,7 +18,7 @@
     "!**/*.test.*"
   ],
   "scripts": {
-    "test": "tap 'tests/**/*.test.ts'",
+    "test": "tsc --noEmit && tap 'tests/**/*.test.ts'",
     "build": "tsup",
     "prepack": "npm run build",
     "lint": "eslint --fix '**/*.{js,ts}'",

@@ -48,6 +48,33 @@ tap.test("middleware flow", async (tap) => {
 	tap.same(log, ["mw1: hello", "mw2: hello"])
 })
 
+tap.test("multiple handlers", async (tap) => {
+	const bot = new TestBot()
+	const log: string[] = []
+	bot.pseudo(
+		(ctx, next) => {
+			log.push(`mw1: ${ctx.pseudo?.test}`)
+			return next()
+		},
+		(ctx, next) => {
+			log.push(`mw2: ${ctx.pseudo?.test}`)
+			return next()
+		}
+	)
+	bot.pseudo().use((ctx, next) => {
+		log.push(`mw3: ${ctx.pseudo?.test}`)
+		return next()
+	})
+	bot.pseudo().use((ctx) => {
+		log.push(`mw4: ${ctx.pseudo?.test}`)
+	})
+	bot.pseudo().use((ctx) => {
+		log.push(`mw5: ${ctx.pseudo?.test}`)
+	})
+	await bot.handlePseudoUpdate({ chat, payload })
+	tap.same(log, ["mw1: hello", "mw2: hello", "mw3: hello", "mw4: hello"])
+})
+
 tap.test("custom update_id", async (tap) => {
 	const bot = new TestBot()
 	const update_id = 4 // https://xkcd.com/221/
